@@ -9,7 +9,6 @@ def print(str):
      time.sleep(1./500)
 
 
-print("Hello, [bold magenta]World[/bold magenta]!")
 def main():
     print("╭──────────────────────────────────────────────────────────────────╮")
     print("│      __  __ __  __ ____         │ Created by: Milis0f            │")
@@ -35,8 +34,7 @@ def main():
       return('[!] Invalide Choice')
    
     if choice == 1:
-      os.system('clear')
-      os.system('bash -c "python3 /tools/tools.py"')
+      os.system("python3 /test.py")
       
     elif choice == 2:
       print('''[!] in building...''')
