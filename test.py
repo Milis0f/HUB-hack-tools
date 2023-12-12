@@ -1,29 +1,3 @@
-def check_modules():
-    required_modules = [
-        'scapy',
-        'nmap',
-        'rich',
-        'pyfiglet',
-        'questionary',
-        'colorama'
-    ]
-
-    missing_modules = []
-
-    for module in required_modules:
-        try:
-            importlib.import_module(module)
-        except ImportError:
-            missing_modules.append(module)
-
-    if missing_modules:
-        print(f"Les modules suivants sont manquants : {', '.join(missing_modules)}")
-        install_modules = input("Voulez-vous les installer automatiquement ? (y/n): ")
-        if install_modules.lower() == 'y':
-            subprocess.check_call(['pip', 'install'] + missing_modules)
-        else:
-            print("Veuillez installer les modules manquants avant d'exécuter l'application.")
-        exit()
 
 
 import importlib
@@ -162,8 +136,8 @@ def main_menu():
     title_text.stylize("bold green")
 
     console = Console()
-    console.print(f"{title_text}\n")
-    print("Milis0f")
+    console.print(f"{title_text}")
+    print("Milis0f\n")
 
     while True:
         choice = select(

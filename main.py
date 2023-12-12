@@ -1,24 +1,33 @@
 import sys, time
 import os
+from colorama import Fore, Back, Style
+import subprocess
 from rich import print
+from rich.console import Console
+
+
+def clear_screen():
+    console = Console()
+    console.clear()
 
 def print(str):
    for c in str + '\n':
      sys.stdout.write(c)
      sys.stdout.flush()
-     time.sleep(1./500)
+     time.sleep(0.5/500)
 
 
 def main():
-    print("╭──────────────────────────────────────────────────────────────────╮")
-    print("│      __  __ __  __ ____         │ Created by: Milis0f            │")
+    clear_screen()
+    print(Fore.GREEN + "╭──────────────────────────────────────────────────────────────────╮")
+    print("│      __  __ __  __ ____         │ Created by: " + Fore.RED + "Milis0f" + Fore.GREEN +"            │")
     print("│     / / / // / / // __ )        │                                │")
     print("│    / /_/ // / / // __  │        │                                │")
     print("│   / __  // /_/ // /_/ /         │                                │")
-    print("│  /_/ /_/ \____//_____/ v1       │                                │")
+    print("│  /_/ /_/ \____//_____/" + Fore.RED + "v1" + Fore.GREEN +"        │                                │")
     print("│                                 │                                │")
     print("│──────────────────────────────────────────────────────────────────│")
-    print("│                                                                  │")
+    print("│                                                                 │")
     print("│                                                                  │")
     print("│                                                                  │")
     print("│                                                                  │")
@@ -34,7 +43,8 @@ def main():
       return('[!] Invalide Choice')
    
     if choice == 1:
-      os.system("python3 /test.py")
+      script_a_lancer = "test.py"  # Remplacez par le chemin de votre script
+      subprocess.run(["python", script_a_lancer])
       
     elif choice == 2:
       print('''[!] in building...''')

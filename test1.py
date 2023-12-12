@@ -1,29 +1,33 @@
 import importlib
 import subprocess
 from pyfiglet import Figlet
+from questionary import select, text
+import requests
+import socket
+import time
+import nmap
+from scapy.all import ARP, Ether, srp
 from rich.console import Console
+from rich.progress import Progress
+from rich.prompt import Prompt, IntPrompt
 from rich.table import Table
 from rich.text import Text
-from rich.prompt import Prompt, IntPrompt
-import ipaddress
-import socket
-import nmap
+from rich import print
+from colorama import Fore, Style
 import asyncio
-from typing import List
-from typing_extensions import TypedDict
-
 
 def clear_screen():
     console = Console()
     console.clear()
 
-
 def check_modules():
     required_modules = [
+        'scapy',
+        'nmap',
         'rich',
         'pyfiglet',
-        'ipaddress',
-        'nmap'
+        'questionary',
+        'colorama'
     ]
 
     missing_modules = []
@@ -43,6 +47,78 @@ def check_modules():
             print("Veuillez installer les modules manquants avant d'exécuter l'application.")
         exit()
 
+async def scan_network(ip_reseau):
+    devices = await scan_reseau(ip_reseau)
+    console = Console()
+
+    if not devices:
+        console.print("[bold red]Aucun appareil actif n'a été trouvé sur le réseau.[/bold red]\n")
+        return
+    
+    table = Table(title="Appareils actifs sur le réseau")
+    table.add_column("IP", style="cyan", justify="left")
+    table.add_column("MAC", style="green", justify="left")
+    table.add_column("Système d'exploitation", style="magenta", justify="left")
+    table.add_column("Nom d'hôte", style="yellow", justify="left")
+
+    for device in devices:
+        ip = device['ip']
+        mac = device['mac']
+        os = await get_os(ip)
+        hostname = await get_hostname(ip)
+
+        table.add_row(ip, mac, os, hostname)
+
+    console.print(table)
+
+    # Utiliser une barre de progression pour le balayage des adresses IP
+    with Progress() as progress:
+        task = progress.add_task("[cyan]Balayage des adresses IP...", total=len(devices))
+        for device in devices:
+            ip = device['ip']
+            mac = device['mac']
+            os = await get_os(ip)
+            hostname = await get_hostname(ip)
+            # Mettre à jour la barre de progression
+            progress.update(task, advance=1, description=f"Balayage de {ip}")
+            # Effectuez votre traitement ici
+
+        # Attendre la fin de la barre de progression
+        progress.stop()
+
+    while True:
+        choix = console.input("\nEntrez l'adresse IP pour obtenir un descriptif détaillé (ou 'q' pour quitter) : ")
+
+        if choix == "q":
+            break
+
+        found = False
+        for device in devices:
+            if device['ip'] == choix:
+                found = True
+                break
+
+        if not found:
+            console.print("[bold red]Adresse IP invalide. Veuillez sélectionner une adresse IP valide.[/bold red]\n")
+            continue
+
+        console.print("\n[bold cyan]Descriptif complet pour l'adresse IP :[/bold cyan]")
+        console.print(f"[bold]IP :[/bold] {device['ip']}")
+        console.print(f"[bold]MAC :[/bold] {device['mac']}")
+        console.print(f"[bold]Système d'exploitation :[/bold] {await get_os(device['ip'])}")
+        console.print(f"[bold]Nom d'hôte :[/bold] {await get_hostname(device['ip'])}")
+
+async def scan_reseau(ip):
+    arp = ARP(pdst=ip)
+    ether = Ether(dst="ff:ff:ff:ff:ff:ff")
+    packet = ether / arp
+    result = srp(packet, timeout=3, verbose=0)[0]
+
+    devices = []
+    for sent, received in result:
+        devices.append({'ip': received.psrc, 'mac': received.hwsrc})
+
+    return devices
 
 async def get_os(ip):
     scanner = nmap.PortScanner()
@@ -52,130 +128,52 @@ async def get_os(ip):
             return scanner[ip]['osmatch'][0]['name']
     return 'N/A'
 
-
 async def get_hostname(ip):
     try:
         return socket.gethostbyaddr(ip)[0]
     except Exception:
         return 'N/A'
 
-
-def display_ip_information(ip):
-    console = Console()
-    table = Table(title=f"Informations pour l'adresse IP : {ip}")
-    table.add_column("Propriété", style="cyan", justify="left")
-    table.add_column("Valeur", style="green", justify="left")
-
-    table.add_row("Adresse IP", ip)
-
-    try:
-        hostname = asyncio.run(get_hostname(ip))
-        table.add_row("Nom d'hôte", hostname)
-    except Exception as e:
-        table.add_row("Nom d'hôte", "N/A")
-
-    try:
-        os = asyncio.run(get_os(ip))
-        table.add_row("Système d'exploitation", os)
-    except Exception as e:
-        table.add_row("Système d'exploitation", "N/A")
-
-    console.print(table)
-
-
-class MenuItem(TypedDict):
-    label: str
-    action: callable
-
-
-def menu(items: List[MenuItem], title: str):
-    console = Console()
-    while True:
-        console.print(f"[bold green]{title}[/bold green]\n")
-        for index, item in enumerate(items):
-            console.print(f"{index + 1}. {item['label']}")
-
-        choice = IntPrompt.ask("\nChoisissez une option (ou 0 pour quitter) :")
-        if choice == 0:
-            break
-        elif 0 < choice <= len(items):
-            action = items[choice - 1]["action"]
-            action()
-        else:
-            console.print("[bold red]Option invalide. Veuillez sélectionner une option valide.[/bold red]\n")
-
-
-def analyze_subnet():
-    console = Console()
-    ip_network = Prompt.ask("Veuillez saisir l'adresse IP du réseau à analyser (au format CIDR) :")
-    try:
-        network = ipaddress.ip_network(ip_network)
-        addresses = [str(ip) for ip in network.hosts()]
-        valid_ips = []
-
-        for address in addresses:
-            try:
-                asyncio.run(get_hostname(address))
-                valid_ips.append((address, "✔️"))
-            except:
-                valid_ips.append((address, "❌"))
-
-        table = Table(title="Liste des adresses IP dans le réseau")
-        table.add_column("Adresse IP", style="cyan", justify="left")
-        table.add_column("Valide", style="green", justify="left")
-
-        for ip, status in valid_ips:
-            table.add_row(ip, status)
-
-        console.print(table)
-
-        selected_ip = Prompt.ask("Entrez l'adresse IP pour obtenir des informations détaillées (ou 'q' pour revenir) :")
-        if selected_ip == 'q':
-            clear_screen()
-        elif selected_ip in addresses:
-            display_ip_information(selected_ip)
-        else:
-            console.print("[bold red]Adresse IP invalide. Veuillez sélectionner une adresse IP valide.[/bold red]\n")
-
-    except ValueError:
-        console.print("[bold red]Format d'adresse IP invalide. Veuillez saisir une adresse IP valide au format CIDR.[/bold red]\n")
-
-
-def view_all_ips():
-    console = Console()
-    ip_network = Prompt.ask("Veuillez saisir l'adresse IP du réseau à afficher (au format CIDR) :")
-    try:
-        network = ipaddress.ip_network(ip_network)
-        addresses = [str(ip) for ip in network.hosts()]
-
-        table = Table(title="Toutes les adresses IP dans le réseau")
-        table.add_column("Adresse IP", style="cyan", justify="left")
-
-        for ip in addresses:
-            table.add_row(ip)
-
-        console.print(table)
-
-        selected_ip = Prompt.ask("Entrez l'adresse IP pour obtenir des informations détaillées (ou 'q' pour revenir) :")
-        if selected_ip == 'q':
-            clear_screen()
-        elif selected_ip in addresses:
-            display_ip_information(selected_ip)
-        else:
-            console.print("[bold red]Adresse IP invalide. Veuillez sélectionner une adresse IP valide.[/bold red]\n")
-
-    except ValueError:
-        console.print("[bold red]Format d'adresse IP invalide. Veuillez saisir une adresse IP valide au format CIDR.[/bold red]\n")
-
+def get_public_ip():
+    response = requests.get('https://api.ipify.org?format=json')
+    if response.status_code == 200:
+        data = response.json()
+        return data['ip']
+    else:
+        return 'N/A'
 
 def main_menu():
-    items = [
-        {"label": "Analyser un sous-réseau", "action": analyze_subnet},
-        {"label": "Voir toutes les adresses IP", "action": view_all_ips},
-        {"label": "Quitter", "action": exit}
-    ]
-    menu(items, "Network Info")
+    clear_screen()
+    f = Figlet(font='slant')
+    title_text = Text(f.renderText("Network Info"))
+    title_text.stylize("bold green")
 
+    console = Console()
+    console.print(f"{title_text}")
+    print("Milis0f\n")
+
+    while True:
+        choice = select(
+            "Que voulez-vous faire ?",
+            choices=[
+                "Analyse automatique du réseau",
+                "Saisir manuellement l'adresse IP du réseau",
+                "Quitter"
+            ]
+        ).ask()
+
+        if choice == "Analyse automatique du réseau":
+            with console.status("[bold cyan]Analyse en cours...", spinner="bouncingBar"):
+                asyncio.run(scan_network("192.168.69.1/24"))
+            clear_screen()
+        elif choice == "Saisir manuellement l'adresse IP du réseau":
+            ip_network = text("Veuillez saisir l'adresse IP du réseau à analyser (au format CIDR) :").ask()
+            with console.status("[bold cyan]Analyse en cours...", spinner="bouncingBar"):
+                asyncio.run(scan_network(ip_network))
+            clear_screen()
+        elif choice == "Quitter":
+            console.print("Merci d'avoir utilisé Network Info. À bientôt !")
+            break
 
 if __name__ == "__main__":
     check_modules()
