@@ -1,8 +1,8 @@
-import sys, time
+import sys
+import time
 import os
-from colorama import Fore, Back, Style
 import subprocess
-from rich import print
+from colorama import Fore
 from rich.console import Console
 
 
@@ -10,50 +10,72 @@ def clear_screen():
     console = Console()
     console.clear()
 
-def print(str):
-   for c in str + '\n':
-     sys.stdout.write(c)
-     sys.stdout.flush()
-     time.sleep(0.5/500)
+def slow_print(message: str) -> None:
+    for c in message + "\n":
+        sys.stdout.write(c)
+        sys.stdout.flush()
+        time.sleep(0.5 / 500)
 
 
 def main():
     clear_screen()
-    print(Fore.GREEN + "╭──────────────────────────────────────────────────────────────────╮")
-    print("│      __  __ __  __ ____         │ Created by: " + Fore.RED + "Milis0f" + Fore.GREEN +"            │")
-    print("│     / / / // / / // __ )        │                                │")
-    print("│    / /_/ // / / // __  │        │                                │")
-    print("│   / __  // /_/ // /_/ /         │                                │")
-    print("│  /_/ /_/ \____//_____/" + Fore.RED + "v1" + Fore.GREEN +"        │                                │")
-    print("│                                 │                                │")
-    print("│──────────────────────────────────────────────────────────────────│")
-    print("│                                                                 │")
-    print("│                                                                  │")
-    print("│                                                                  │")
-    print("│                                                                  │")
-    print("│                                                                  │")
-    print("│                                                                  │")
-    print("╰──────────────────────────────────────────────────────────────────╯")
+    slow_print(Fore.GREEN + "╭──────────────────────────────────────────────────────────────────╮")
+    slow_print(
+        "│      __  __ __  __ ____         │ Created by: "
+        + Fore.RED
+        + "Milis0f"
+        + Fore.GREEN
+        + "            │"
+    )
+    slow_print("│     / / / // / / // __ )        │                                │")
+    slow_print("│    / /_/ // / / // __  │        │                                │")
+    slow_print("│   / __  // /_/ // /_/ /         │                                │")
+    slow_print(
+        "│  /_/ /_/ \\____//_____/" + Fore.RED + "v1" + Fore.GREEN + "        │                                │"
+    )
+    slow_print("│                                 │                                │")
+    slow_print("│──────────────────────────────────────────────────────────────────│")
+    slow_print("│  [1] Network scanner                                              │")
+    slow_print("│  [2] Sherlock username search                                     │")
+    slow_print("│  [3] Website analyzer                                             │")
+    slow_print("│  [4] Port scanner                                                 │")
+    slow_print("│  [5] Subdomain finder                                             │")
+    slow_print("│  [0] Exit                                                         │")
+    slow_print("╰──────────────────────────────────────────────────────────────────╯")
     try:
-      choice = int(input("Enter Your choice: "))
+        choice = int(input("Enter your choice: "))
     except (ValueError, EOFError, KeyboardInterrupt):
-      return print('\n[!] Interrupted! or Wrong Value')
-   
-    if choice not in range(4):
-      return('[!] Invalide Choice')
-   
+        print("\n[!] Interrupted! or Wrong Value")
+        return
+
     if choice == 1:
-      script_a_lancer = "test.py"  # Remplacez par le chemin de votre script
-      subprocess.run(["python", script_a_lancer])
-      
+        subprocess.run(["python", "test.py"])
     elif choice == 2:
-      print('''[!] in building...''')
-      
+        username = input("Enter username: ")
+        sherlock_path = os.path.join("tools", "sherlock", "sherlock", "sherlock.py")
+        subprocess.run(["python", sherlock_path, username])
     elif choice == 3:
-      print('''[!] in building...''')
-      
+        url = input("Enter URL: ")
+        weban_path = os.path.join("tools", "weban", "weban.py")
+        subprocess.run(["python", weban_path, url])
+    elif choice == 4:
+        host = input("Enter host: ")
+        port_range = input("Enter port range (start-end): ")
+        try:
+            start_str, end_str = port_range.split("-", 1)
+        except ValueError:
+            print("Invalid range format")
+            return
+        portscan_path = os.path.join("tools", "portscan", "portscan.py")
+        subprocess.run(["python", portscan_path, host, start_str, end_str])
+    elif choice == 5:
+        domain = input("Enter domain: ")
+        subfinder_path = os.path.join("tools", "subfinder", "subfinder.py")
+        subprocess.run(["python", subfinder_path, domain])
+    elif choice == 0:
+        print("Goodbye!")
     else:
-      print("Invalide choice")
+        print("[!] Invalid choice")
     
     
 

@@ -8,11 +8,11 @@
 │  /_/ /_/ \____//_____/ v1       │                                │
 │                                 │                                │
 │──────────────────────────────────────────────────────────────────│
-│  [1] Network_Infos:                                              │
-│                                                                  │
-│                                                                  │
-│                                                                  │
-│                                                                  │
+│  [1] Network_Infos                                               │
+│  [2] Sherlock username search                                    │
+│  [3] Website analyzer                                            │
+│  [4] Port scanner                                                │
+│  [5] Subdomain finder                                            │
 │                                                                  │
 ╰──────────────────────────────────────────────────────────────────╯
-[!] Enter Your choice:
+[!] Enter your choice:
